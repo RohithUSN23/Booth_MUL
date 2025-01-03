@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booth's Algorithm Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 60%;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0078d4;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px;
+            background: #0078d4;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005bb5;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        pre {
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        p {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0078d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Booth's Algorithm Simulator</h1>
+        <form id="boothForm">
+            <label for="multiplicand">Multiplicand:</label>
+            <input type="number" id="multiplicand" placeholder="Enter the multiplicand" required>
+            <label for="multiplier">Multiplier:</label>
+            <input type="number" id="multiplier" placeholder="Enter the multiplier" required>
+            <button type="submit">Calculate</button>
+        </form>
+        <div id="output" class="hidden">
+            <h2>Calculation Steps:</h2>
+            <pre id="steps"></pre>
+            <h2>Final Result:</h2>
+            <p id="result"></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById("boothForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            // Get user inputs
+            const multiplicand = parseInt(document.getElementById("multiplicand").value);
+            const multiplier = parseInt(document.getElementById("multiplier").value);
+
+            // Determine the number of bits required
+            const numBits = Math.max(multiplicand.toString(2).length, multiplier.toString(2).length) + 1;
+
+            // Helper functions
+            const toBinary = (value, bits) => {
+                return value < 0
+                    ? (value >>> 0).toString(2).slice(-bits).padStart(bits, "1")
+                    : value.toString(2).padStart(bits, "0");
+            };
+
+            const binaryToInt = (binary) =>
+                binary[0] === "1" ? parseInt(binary, 2) - (1 << binary.length) : parseInt(binary, 2);
+
+            // Initialize variables
+            let A = "0".repeat(numBits);
+            let Q = toBinary(multiplier, numBits);
+            let Q_1 = "0";
+            const M = toBinary(multiplicand, numBits);
+
+            // Start building the output steps
+            let steps = `Initial Values:\nA: ${A}, Q: ${Q}, Q-1: ${Q_1}, M: ${M}\n\n`;
+
+            // Perform Booth's Algorithm
+            for (let i = 0; i < numBits; i++) {
+                steps += `Step ${i + 1}:\n`;
+
+                if (Q[Q.length - 1] === "1" && Q_1 === "0") {
+                    A = toBinary(binaryToInt(A) - binaryToInt(M), numBits);
+                    steps += `  A = A - M -> ${A}\n`;
+                } else if (Q[Q.length - 1] === "0" && Q_1 === "1") {
+                    A = toBinary(binaryToInt(A) + binaryToInt(M), numBits);
+                    steps += `  A = A + M -> ${A}\n`;
+                }
+
+                // Perform Arithmetic Right Shift
+                const combined = A + Q + Q_1;
+                const shifted = combined[0] + combined.slice(0, -1);
+                A = shifted.slice(0, numBits);
+                Q = shifted.slice(numBits, 2 * numBits);
+                Q_1 = shifted[2 * numBits];
+
+                steps += `  Arithmetic Shift: A = ${A}, Q = ${Q}, Q-1 = ${Q_1}\n\n`;
+            }
+
+            // Calculate final result
+            const result = binaryToInt(A + Q);
+            steps += `Final Binary Result: ${A + Q}\n`;
+            steps += `Final Decimal Result: ${result}`;
+
+            // Display results
+            document.getElementById("steps").innerText = steps;
+            document.getElementById("result").innerText = `Result: ${result}`;
+            document.getElementById("output").classList.remove("hidden");
+        });
+    </script>
+</body>
+</html>
